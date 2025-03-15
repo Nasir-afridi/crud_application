@@ -10,6 +10,7 @@ class Users extends CI_Controller {
         $this->load->library('upload'); // File upload library load karein
     }
 
+    
     // List all users
     public function index() {
         $query = $this->db->get('users'); // 'users' table se data fetch karein
@@ -24,34 +25,44 @@ class Users extends CI_Controller {
 
     // Save new user
     public function save() {
-        // File upload configuration
-        $config['upload_path'] = './uploads/'; // Folder where images will be uploaded
-        $config['allowed_types'] = 'jpg|jpeg|png|gif'; // Allowed file types
-        $config['max_size'] = 2048; // Max file size in KB (2MB)
-
-        $this->upload->initialize($config);
-
-        if ($this->upload->do_upload('profile_picture')) {
-            // File uploaded successfully
-            $file_data = $this->upload->data();
-            $profile_picture = 'uploads/' . $file_data['file_name']; // File path to store in database
+        // Form validation rules
+        $this->form_validation->set_rules('email', 'Email', 'required|valid_email|is_unique[users.email]');
+    
+        if ($this->form_validation->run() == FALSE) {
+            // Validation failed, show errors
+            $this->load->view('users/add');
         } else {
-            // File upload failed
-            $profile_picture = ''; // Set default or handle error
+            // File upload configuration
+            $config['upload_path'] = './uploads/';
+            $config['allowed_types'] = 'jpg|jpeg|png|gif';
+            $config['max_size'] = 2048;
+    
+            $this->upload->initialize($config);
+    
+            if ($this->upload->do_upload('profile_picture')) {
+                $file_data = $this->upload->data();
+                $profile_picture = 'uploads/' . $file_data['file_name'];
+            } else {
+                $profile_picture = '';
+            }
+    
+            // Form data ko array mein collect karein
+            $data = array(
+                'name' => $this->input->post('name'),
+                'email' => $this->input->post('email'),
+                'age' => $this->input->post('age'),
+                'skills' => $this->input->post('skills'),
+                'address' => $this->input->post('address'),
+                'designation' => $this->input->post('designation'),
+                'profile_picture' => $profile_picture
+            );
+    
+            // Data ko database mein insert karein
+            $this->db->insert('users', $data);
+    
+            // Users list page par redirect karein
+            redirect('users');
         }
-
-        // Form data ko array mein collect karein
-        $data = array(
-            'name' => $this->input->post('name'),
-            'email' => $this->input->post('email'),
-            'age' => $this->input->post('age'),
-            'skills' => $this->input->post('skills'),
-            'address' => $this->input->post('address'),
-            'designation' => $this->input->post('designation'),
-            'profile_picture' => $profile_picture // File path store karein
-        );
-        $this->db->insert('users', $data); // Data ko 'users' table mein insert karein
-        redirect('users'); // Users list page par redirect karein
     }
 
     // Show form to edit a user
@@ -64,41 +75,51 @@ class Users extends CI_Controller {
 
     // Update user
     public function update($id) {
-        // File upload configuration
-        $config['upload_path'] = './uploads/'; // Folder where images will be uploaded
-        $config['allowed_types'] = 'jpg|jpeg|png|gif'; // Allowed file types
-        $config['max_size'] = 2048; // Max file size in KB (2MB)
-
-        $this->upload->initialize($config);
-
-        if ($this->upload->do_upload('profile_picture')) {
-            // File uploaded successfully
-            $file_data = $this->upload->data();
-            $profile_picture = 'uploads/' . $file_data['file_name']; // File path to store in database
-
-            // Purani profile picture delete karein (agar exist karti hai)
-            $user = $this->db->get_where('users', array('id' => $id))->row();
-            if ($user->profile_picture && file_exists($user->profile_picture)) {
-                unlink($user->profile_picture); // Purani file delete karein
-            }
+        // Form validation rules
+        $this->form_validation->set_rules('email', 'Email', 'required|valid_email');
+    
+        if ($this->form_validation->run() == FALSE) {
+            // Validation failed, show errors
+            $this->load->view('users/edit');
         } else {
-            // File upload failed, use existing image
-            $profile_picture = $this->input->post('existing_profile_picture');
+            // File upload configuration
+            $config['upload_path'] = './uploads/';
+            $config['allowed_types'] = 'jpg|jpeg|png|gif';
+            $config['max_size'] = 2048;
+    
+            $this->upload->initialize($config);
+    
+            if ($this->upload->do_upload('profile_picture')) {
+                $file_data = $this->upload->data();
+                $profile_picture = 'uploads/' . $file_data['file_name'];
+    
+                // Purani profile picture delete karein (agar exist karti hai)
+                $user = $this->db->get_where('users', array('id' => $id))->row();
+                if ($user->profile_picture && file_exists($user->profile_picture)) {
+                    unlink($user->profile_picture);
+                }
+            } else {
+                $profile_picture = $this->input->post('existing_profile_picture');
+            }
+    
+            // Form data ko array mein collect karein
+            $data = array(
+                'name' => $this->input->post('name'),
+                'email' => $this->input->post('email'),
+                'age' => $this->input->post('age'),
+                'skills' => $this->input->post('skills'),
+                'address' => $this->input->post('address'),
+                'designation' => $this->input->post('designation'),
+                'profile_picture' => $profile_picture
+            );
+    
+            // Data ko database mein update karein
+            $this->db->where('id', $id);
+            $this->db->update('users', $data);
+    
+            // Users list page par redirect karein
+            redirect('users');
         }
-
-        // Form data ko array mein collect karein
-        $data = array(
-            'name' => $this->input->post('name'),
-            'email' => $this->input->post('email'),
-            'age' => $this->input->post('age'),
-            'skills' => $this->input->post('skills'),
-            'address' => $this->input->post('address'),
-            'designation' => $this->input->post('designation'),
-            'profile_picture' => $profile_picture // File path store karein
-        );
-        $this->db->where('id', $id); // Specific user ko identify karein
-        $this->db->update('users', $data); // Data ko update karein
-        redirect('users'); // Users list page par redirect karein
     }
 
     // Delete user
