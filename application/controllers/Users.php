@@ -73,15 +73,31 @@ class Users extends CI_Controller {
         $this->load->view('users/edit', $data); // Edit user form ka view load karein
     }
 
-    // Update user
     public function update($id) {
         // Form validation rules
         $this->form_validation->set_rules('email', 'Email', 'required|valid_email');
     
         if ($this->form_validation->run() == FALSE) {
             // Validation failed, show errors
-            $this->load->view('users/edit');
+            $this->session->set_flashdata('error', validation_errors());
+            redirect('users/edit/' . $id);
         } else {
+            $email = $this->input->post('email');
+    
+            // **CURRENT USER KA EMAIL CHECK KARO**
+            $currentUser = $this->db->get_where('users', array('id' => $id))->row();
+    
+            if ($currentUser->email !== $email) {
+                // **AGAR EMAIL CHANGE HO RHA HAI, TO DUPLICATE CHECK KARO**
+                $existingUser = $this->db->where('email', $email)->where('id !=', $id)->get('users')->row();
+    
+                if ($existingUser) {
+                    // **AGAR EMAIL ALREADY MAUJOOD HAI, TO ERROR DIKHAYO**
+                    $this->session->set_flashdata('error', 'The Email field must contain a unique value.');
+                    redirect('users/edit/' . $id);
+                }
+            }
+    
             // File upload configuration
             $config['upload_path'] = './uploads/';
             $config['allowed_types'] = 'jpg|jpeg|png|gif';
@@ -94,18 +110,17 @@ class Users extends CI_Controller {
                 $profile_picture = 'uploads/' . $file_data['file_name'];
     
                 // Purani profile picture delete karein (agar exist karti hai)
-                $user = $this->db->get_where('users', array('id' => $id))->row();
-                if ($user->profile_picture && file_exists($user->profile_picture)) {
-                    unlink($user->profile_picture);
+                if ($currentUser->profile_picture && file_exists($currentUser->profile_picture)) {
+                    unlink($currentUser->profile_picture);
                 }
             } else {
                 $profile_picture = $this->input->post('existing_profile_picture');
             }
     
-            // Form data ko array mein collect karein
+            // **DATA UPDATE KARO**
             $data = array(
                 'name' => $this->input->post('name'),
-                'email' => $this->input->post('email'),
+                'email' => $email,
                 'age' => $this->input->post('age'),
                 'skills' => $this->input->post('skills'),
                 'address' => $this->input->post('address'),
@@ -113,15 +128,14 @@ class Users extends CI_Controller {
                 'profile_picture' => $profile_picture
             );
     
-            // Data ko database mein update karein
             $this->db->where('id', $id);
             $this->db->update('users', $data);
     
-            // Users list page par redirect karein
+            $this->session->set_flashdata('success', 'User updated successfully.');
             redirect('users');
         }
     }
-
+    
     // Delete user
     public function delete($id) {
         // User ki profile picture ka path fetch karein
