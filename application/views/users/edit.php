@@ -10,6 +10,13 @@
     <div class="container mt-5">
         <div class="card shadow-lg p-4">
             <h2 class="text-center mb-4">Edit User</h2>
+
+                <?php if ($this->session->flashdata('error')) { ?>
+                    <div class="alert alert-danger">
+                        <?php echo $this->session->flashdata('error'); ?>
+                    </div>
+                    
+                <?php } ?>
             <form action="<?php echo base_url('users/update/'.$user->id); ?>" method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="name" class="form-label">Name:</label>
