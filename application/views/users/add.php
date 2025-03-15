@@ -10,6 +10,13 @@
     <div class="container mt-5">
         <div class="card shadow-lg p-4">
             <h2 class="mb-4 text-center">Add New User</h2>
+
+            <?php if (validation_errors()): ?>
+                <div class="alert alert-danger">
+                    <?php echo validation_errors(); ?>
+                </div>
+            <?php endif; ?>
+            
             <form action="<?php echo base_url('users/save'); ?>" method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
