@@ -35,7 +35,7 @@
 
                 <div class="mb-3">
                     <label for="skills" class="form-label">Skills</label>
-                    <textarea class="form-control" name="skills" rows="3" required></textarea>
+                    <input type="text" class="form-control" name="skills" required>
                 </div>
 
                 <div class="mb-3">
