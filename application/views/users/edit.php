@@ -27,6 +27,10 @@
                     <input type="email" class="form-control" name="email" value="<?php echo $user->email; ?>" required>
                 </div>
                 <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current password">
+                </div>
+                <div class="mb-3">
                     <label for="age" class="form-label">Age:</label>
                     <input type="number" class="form-control" name="age" value="<?php echo $user->age; ?>" required>
                 </div>
