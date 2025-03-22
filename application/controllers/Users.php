@@ -5,10 +5,10 @@ class Users extends CI_Controller {
 
     public function __construct() {
         parent::__construct();
-        $this->load->library('session'); // Session library load karein
-        $this->load->database(); // Database load karein
-        $this->load->helper('url'); // URL helper load karein
-        $this->load->library('upload'); // File upload library load karein
+        $this->load->library('session'); 
+        $this->load->database(); 
+        $this->load->helper('url'); 
+        $this->load->library('upload'); 
     }
 
     
