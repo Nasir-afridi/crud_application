@@ -23,12 +23,10 @@
 </head>
 <body>
     <div class="container mt-5">
-        <!-- Welcome Message -->
         <div class="welcome-message">
             Hey <?php echo $username; ?>, Welcome to CodeIgniter 3 CRUD Application! You have logged in successfully.
         </div>
 
-        <!-- Logout Button -->
         <a href="<?php echo base_url('logout'); ?>" class="btn btn-danger logout-btn">Logout</a>
 
         <div class="card shadow-lg p-4">

@@ -14,9 +14,9 @@
                 <?php if ($this->session->flashdata('error')) { ?>
                     <div class="alert alert-danger">
                         <?php echo $this->session->flashdata('error'); ?>
-                    </div>
-                    
+                    </div>    
                 <?php } ?>
+                
             <form action="<?php echo base_url('users/update/'.$user->id); ?>" method="post" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="name" class="form-label">Name:</label>
