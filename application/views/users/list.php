@@ -5,9 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Users List</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .welcome-message {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .logout-btn {
+            display: block;
+            width: 150px;
+            margin: 20px auto;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
+        <!-- Welcome Message -->
+        <div class="welcome-message">
+            Hey <?php echo $username; ?>, Welcome to CodeIgniter 3 CRUD Application! You have logged in successfully.
+        </div>
+
+        <!-- Logout Button -->
+        <a href="<?php echo base_url('logout'); ?>" class="btn btn-danger logout-btn">Logout</a>
+
         <div class="card shadow-lg p-4">
             <h2 class="mb-4 text-center">Users List</h2>
             <div class="text-end mb-3">
