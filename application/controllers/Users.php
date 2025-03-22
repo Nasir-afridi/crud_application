@@ -5,6 +5,7 @@ class Users extends CI_Controller {
 
     public function __construct() {
         parent::__construct();
+        $this->load->library('session'); // Session library load karein
         $this->load->database(); // Database load karein
         $this->load->helper('url'); // URL helper load karein
         $this->load->library('upload'); // File upload library load karein
@@ -13,20 +14,91 @@ class Users extends CI_Controller {
     
     // List all users
     public function index() {
+        // Agar user logged in nahi hai, toh login page par redirect karein
+        if (!$this->session->userdata('logged_in')) {
+            redirect('login');
+        }
+    
+        // Session se user ka naam fetch karein
+        $data['username'] = $this->session->userdata('username');
+    
+        // Users list fetch karein
         $query = $this->db->get('users'); // 'users' table se data fetch karein
         $data['users'] = $query->result(); // Data ko $data array mein store karein
-        $this->load->view('users/list', $data); // View load karein aur data pass karein
+    
+        // View load karein aur data pass karein
+        $this->load->view('users/list', $data);
+    }
+
+    public function login() {
+        // Agar user already logged in hai, toh dashboard par redirect karein
+        if ($this->session->userdata('user_id')) {
+            redirect('users');
+        }
+        $this->load->view('users/login'); // Login view load karein
+    }
+
+    public function do_login() {
+        // Form validation rules
+        $this->form_validation->set_rules('email', 'Email', 'required|valid_email');
+        $this->form_validation->set_rules('password', 'Password', 'required');
+    
+        if ($this->form_validation->run() == FALSE) {
+            // Validation failed, show errors
+            $this->load->view('users/login');
+        } else {
+            $email = $this->input->post('email');
+            $password = $this->input->post('password');
+    
+            // Database se user ko fetch karein
+            $user = $this->db->get_where('users', array('email' => $email))->row();
+    
+            // Password verify karein
+            if ($user && password_verify($password, $user->password)) {
+                // Session data set karein
+                $session_data = array(
+                    'user_id' => $user->id,
+                    'username' => $user->name,
+                    'email' => $user->email,
+                    'logged_in' => TRUE
+                );
+                $this->session->set_userdata($session_data);
+    
+                // Dashboard par redirect karein
+                redirect('users');
+            } else {
+                // Invalid credentials, error message dikhayen
+                $this->session->set_flashdata('error', 'Invalid email or password');
+                redirect('login');
+            }
+        }
+    }
+
+    public function logout() {
+        // Session destroy karein
+        $this->session->unset_userdata('user_id');
+        $this->session->unset_userdata('username');
+        $this->session->unset_userdata('email');
+        $this->session->unset_userdata('logged_in');
+        $this->session->sess_destroy();
+    
+        // Login page par redirect karein
+        redirect('login');
     }
 
     // Show form to add a new user
     public function add() {
+        // Agar user logged in nahi hai, toh login page par redirect karein
+        if (!$this->session->userdata('logged_in')) {
+            redirect('login');
+        }
         $this->load->view('users/add'); // Add user form ka view load karein
     }
-
     // Save new user
     public function save() {
         // Form validation rules
         $this->form_validation->set_rules('email', 'Email', 'required|valid_email|is_unique[users.email]');
+        $this->form_validation->set_rules('password', 'Password', 'required|min_length[6]');
     
         if ($this->form_validation->run() == FALSE) {
             // Validation failed, show errors
@@ -54,7 +126,8 @@ class Users extends CI_Controller {
                 'skills' => $this->input->post('skills'),
                 'address' => $this->input->post('address'),
                 'designation' => $this->input->post('designation'),
-                'profile_picture' => $profile_picture
+                'profile_picture' => $profile_picture,
+                'password' => password_hash($this->input->post('password'), PASSWORD_BCRYPT) // Password hash karein
             );
     
             // Data ko database mein insert karein
@@ -65,17 +138,10 @@ class Users extends CI_Controller {
         }
     }
 
-    // Show form to edit a user
-    public function edit($id) {
-        $query = $this->db->get_where('users', array('id' => $id)); // Specific user ka data fetch karein
-        // select * from user where id = $id;
-        $data['user'] = $query->row(); // Data ko $data array mein store karein
-        $this->load->view('users/edit', $data); // Edit user form ka view load karein
-    }
-
     public function update($id) {
         // Form validation rules
         $this->form_validation->set_rules('email', 'Email', 'required|valid_email');
+        $this->form_validation->set_rules('password', 'Password', 'min_length[6]');
     
         if ($this->form_validation->run() == FALSE) {
             // Validation failed, show errors
@@ -128,6 +194,12 @@ class Users extends CI_Controller {
                 'profile_picture' => $profile_picture
             );
     
+            // Password update karein (agar diya gaya hai)
+            $new_password = $this->input->post('password');
+            if (!empty($new_password)) {
+                $data['password'] = password_hash($new_password, PASSWORD_BCRYPT);
+            }
+    
             $this->db->where('id', $id);
             $this->db->update('users', $data);
     
@@ -135,16 +207,41 @@ class Users extends CI_Controller {
             redirect('users');
         }
     }
+
+    public function edit($id) {
+        // Agar user logged in nahi hai, toh login page par redirect karein
+        if (!$this->session->userdata('logged_in')) {
+            redirect('login');
+        }
+        $query = $this->db->get_where('users', array('id' => $id)); // Specific user ka data fetch karein
+        $data['user'] = $query->row(); // Data ko $data array mein store karein
+        $this->load->view('users/edit', $data); // Edit user form ka view load karein
+    }
     
-    // Delete user
     public function delete($id) {
+        // Agar user logged in nahi hai, toh login page par redirect karein
+        if (!$this->session->userdata('logged_in')) {
+            redirect('login');
+        }
+
         // User ki profile picture ka path fetch karein
         $user = $this->db->get_where('users', array('id' => $id))->row();
+
+        // Check karein ki user exist karta hai ya nahi
+        if (!$user) {
+            $this->session->set_flashdata('error', 'User not found');
+            redirect('users');
+        }
+
         $profile_picture_path = $user->profile_picture;
 
         // Agar profile picture exist karti hai, toh use delete karein
         if ($profile_picture_path && file_exists($profile_picture_path)) {
-            unlink($profile_picture_path); // File delete karein
+            if (is_writable($profile_picture_path)) {
+                unlink($profile_picture_path); // File delete karein
+            } else {
+                $this->session->set_flashdata('error', 'Unable to delete profile picture: Permission denied');
+            }
         }
 
         // User ko database se delete karein
@@ -152,6 +249,7 @@ class Users extends CI_Controller {
         $this->db->delete('users');
 
         // Users list page par redirect karein
+        $this->session->set_flashdata('success', 'User deleted successfully');
         redirect('users');
     }
 }
